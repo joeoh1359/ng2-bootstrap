@@ -82,6 +82,20 @@ describe('Component: TypeaheadContainer', () => {
       it('should not set the \"active\" class on other matches', () => {
         expect(matches[1].classList.contains('active')).toBeFalsy();
       });
+
+      it('should not set the \"active\" class on any if focusFirst is false', () =>{
+        component.focusFirst=false;
+        component.matches = [
+          new TypeaheadMatch({id: 0, name: 'foo'}, 'foo'),
+          new TypeaheadMatch({id: 1, name: 'food'}, 'food')
+        ];
+        fixture.detectChanges();
+
+        matches = asNativeElements(fixture.debugElement.queryAll(By.css('.dropdown-menu li')));
+
+        expect(matches[0].classList.contains('active')).toBeFalsy();
+        expect(matches[1].classList.contains('active')).toBeFalsy();
+      })
     });
 
     describe('nextActiveMatch', () => {
@@ -182,6 +196,44 @@ describe('Component: TypeaheadContainer', () => {
         component.prevActiveMatch();
 
         expect(component.isActive(component.matches[1])).toBeTruthy();
+      });
+    });
+  });
+
+  describe('matches object', () => {
+      let matches: HTMLLIElement[];
+
+    beforeEach(() => {
+      component.query = ['fo'];
+      component.matches = [
+        new TypeaheadMatch({id: 0, name: 'foo'}, 'foo'),
+        new TypeaheadMatch({id: 1, name: 'food'}, 'food')
+      ];
+      fixture.detectChanges();
+
+      matches = asNativeElements(fixture.debugElement.queryAll(By.css('.dropdown-menu li')));
+    });
+
+    describe('rendering', () => {
+      it('should be', ()=>{
+        expect(typeof(component.query)).toBe('object');
+      });
+      it('should render 2 matches', () => {
+        expect(matches.length).toBe(2);
+      });
+
+      xit('should highlight query for match', () => {
+        // expect(matches[1].children[0].innerHTML).toBe('<strong>fo</strong>od');
+        const ms = fixture.debugElement.queryAll(By.css('.dropdown-menu li span'));
+        expect(ms[1].innerHTML).toBe('<strong>fo</strong>od');
+      });
+
+      it('should set the \"active\" class on the first match', () => {
+        expect(matches[0].classList.contains('active')).toBeTruthy();
+      });
+
+      it('should not set the \"active\" class on other matches', () => {
+        expect(matches[1].classList.contains('active')).toBeFalsy();
       });
     });
   });

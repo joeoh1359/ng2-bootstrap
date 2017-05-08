@@ -111,7 +111,7 @@ export class TypeaheadDirective implements OnInit, OnDestroy {
       }
 
       // Set user defined escape keys
-      if(this.typeaheadEscapeKeys.find(k => k===e.keyCode)){
+      if(this.typeaheadEscapeKeys.find(k => k===e.keyCode) ){
         this.hide();
         return;
       }
@@ -209,6 +209,12 @@ export class TypeaheadDirective implements OnInit, OnDestroy {
         this.hide();
         return;
       }
+    }
+
+    // if tab is not ignored, keep focus on typeahead container
+    if(e.keyCode === 9 && (this.typeaheadIgnoreKeys.findIndex(k => k===9)==-1)){
+      e.preventDefault();
+      return;
     }
   }
 

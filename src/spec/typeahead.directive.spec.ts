@@ -20,7 +20,8 @@ interface State {
   <input [(ngModel)]="selectedState" 
          [typeahead]="states" 
          [typeaheadOptionField]="'name'"
-         (typeaheadOnBlur)="onBlurEvent($event)">
+         (typeaheadOnBlur)="onBlurEvent($event)"
+         (typeaheadLoading)="onLoading($event)">
 `
 })
 class TestTypeaheadComponent {
@@ -31,7 +32,9 @@ class TestTypeaheadComponent {
   ];
 
   public onBlurEvent (activeItem) { };
+  public onLoading (activeItem) { };
 }
+
 
 describe('Directive: Typeahead', () => {
   let fixture:ComponentFixture<TestTypeaheadComponent>;
@@ -133,6 +136,204 @@ describe('Directive: Typeahead', () => {
 
       expect(directive.matches.length).toBe(0);
     }));
+
+    it('should not show the typeahead if the input length is shorter than the min length', fakeAsync(() =>{
+      directive.typeaheadMinLength = 2;
+
+      inputElement.value = 'A';
+      fireEvent(inputElement, 'keyup');
+
+      fixture.detectChanges();
+      tick(100);
+      
+      let typeaheadContainer = fixture.debugElement.query(By.css('typeahead-container'))
+      expect(typeaheadContainer).toBeNull();
+    }));
+
+    it('should close container when escape key is pressed', fakeAsync(() =>{
+      var keyboardEvent = document.createEvent("Events");
+      keyboardEvent.initEvent('keyup', true, true);
+      keyboardEvent['keyCode'] = 27;
+      keyboardEvent['which'] = 27;
+      inputElement.dispatchEvent(keyboardEvent); 
+      
+      fixture.detectChanges();
+      tick(100);
+      
+      let typeaheadContainer = fixture.debugElement.query(By.css('typeahead-container'));
+      expect(typeaheadContainer).toBeNull();
+    }));
+
+    it('should select active match when enter key is pressed', fakeAsync(() =>{
+      let defaultActive = directive._container.active;
+
+      let match :TypeaheadMatch;
+      let sub = directive.typeaheadOnSelect.subscribe(m => {
+        match = m;
+        sub.unsubscribe();
+      });
+
+      var keyboardEvent = document.createEvent("Events");
+      keyboardEvent.initEvent('keyup', true, true);
+      keyboardEvent['keyCode'] = 13;
+      keyboardEvent['which'] = 13;
+      inputElement.dispatchEvent(keyboardEvent); 
+      
+      fixture.detectChanges();
+      tick(100);
+
+      expect(match).toBe(defaultActive);
+    }));
+
+    it('should select active match when tab key is pressed', fakeAsync(() =>{
+      let defaultActive = directive._container.active;
+
+      let match :TypeaheadMatch;
+      let sub = directive.typeaheadOnSelect.subscribe(m => {
+        match = m;
+        sub.unsubscribe();
+      });
+
+      var keyboardEvent = document.createEvent("Events");
+      keyboardEvent.initEvent('keyup', true, true);
+      keyboardEvent['keyCode'] = 9;
+      keyboardEvent['which'] = 9;
+      inputElement.dispatchEvent(keyboardEvent); 
+      
+      fixture.detectChanges();
+      tick(100);
+
+      expect(match).toBe(defaultActive);
+    }));
+
+    it('should select next match when down key is pressed', fakeAsync(() =>{
+      directive._container.nextActiveMatch();
+      let nextActive = directive._container.active;
+      directive._container.prevActiveMatch();
+
+      var keyboardEvent = document.createEvent("Events");
+      keyboardEvent.initEvent('keyup', true, true);
+      keyboardEvent['keyCode'] = 40;
+      keyboardEvent['which'] = 40;
+      inputElement.dispatchEvent(keyboardEvent); 
+      
+      fixture.detectChanges();
+      tick(100);
+
+      expect(directive._container.active).toBe(nextActive);
+    }));
+
+    it('should select previous match when up key is pressed', fakeAsync(() =>{
+      directive._container.prevActiveMatch();
+      let prevActive = directive._container.active;
+      directive._container.nextActiveMatch();
+
+      var keyboardEvent = document.createEvent("Events");
+      keyboardEvent.initEvent('keyup', true, true);
+      keyboardEvent['keyCode'] = 38;
+      keyboardEvent['which'] = 38;
+      inputElement.dispatchEvent(keyboardEvent); 
+      
+      fixture.detectChanges();
+      tick(100);
+
+      expect(directive._container.active).toBe(prevActive);
+    }));
+
+    it('should not trigger typeahead on enter', fakeAsync(() =>{
+      directive.hide();
+
+      var keyboardEvent = document.createEvent("Events");
+      keyboardEvent.initEvent('keyup', true, true);
+      keyboardEvent['keyCode'] = 13;
+      keyboardEvent['which'] = 13;
+      inputElement.dispatchEvent(keyboardEvent); 
+      
+      fixture.detectChanges();
+      tick(100);
+
+      let typeaheadContainer = fixture.debugElement.query(By.css('typeahead-container'));
+      expect(typeaheadContainer).toBeNull();
+    }));
+
+    it('should do nothing if there is no active item on enter', fakeAsync(() =>{
+      directive._container.selectActive(null);
+
+      var keyboardEvent = document.createEvent("Events");
+      keyboardEvent.initEvent('keyup', true, true);
+      keyboardEvent['keyCode'] = 13;
+      keyboardEvent['which'] = 13;
+      inputElement.dispatchEvent(keyboardEvent); 
+      
+      fixture.detectChanges();
+      tick(100);
+
+      let typeaheadContainer = fixture.debugElement.query(By.css('typeahead-container'));
+      expect(typeaheadContainer).not.toBeNull();
+    }));
+    
+    describe('on custom defined key',() =>{
+      beforeEach(fakeAsync(() =>{
+        directive.typeaheadSelectKeys = [49];
+        directive.typeaheadEscapeKeys = [50];
+        directive.typeaheadIgnoreKeys = [13];
+      }));
+
+      it('should select active match when the 1 (keyCode 49) key is pressed', fakeAsync(() =>{
+        let defaultActive = directive._container.active;
+        
+        let match :TypeaheadMatch;
+        let sub = directive.typeaheadOnSelect.subscribe(m => {
+          match = m;
+          sub.unsubscribe();
+        });
+
+        var keyboardEvent = document.createEvent("Events");
+        keyboardEvent.initEvent('keyup', true, true);
+        keyboardEvent['keyCode'] = 49;
+        keyboardEvent['which'] = 49;
+        inputElement.dispatchEvent(keyboardEvent); 
+        
+        fixture.detectChanges();
+        tick(100);
+
+        expect(match).toBe(defaultActive);
+      }));
+
+      it('should close container when the 2 (keyCode 50) key is pressed', fakeAsync(() =>{
+        var keyboardEvent = document.createEvent("Events");
+        keyboardEvent.initEvent('keyup', true, true);
+        keyboardEvent['keyCode'] = 27;
+        keyboardEvent['which'] = 27;
+        inputElement.dispatchEvent(keyboardEvent); 
+        
+        fixture.detectChanges();
+        tick(100);
+        
+        let typeaheadContainer = fixture.debugElement.query(By.css('typeahead-container'));
+        expect(typeaheadContainer).toBeNull();
+      }));
+
+      it('should ignore the enter key', fakeAsync(() =>{
+        let match :TypeaheadMatch;
+        let sub = directive.typeaheadOnSelect.subscribe(m => {
+          match = m;
+          sub.unsubscribe();
+        });
+
+        var keyboardEvent = document.createEvent("Events");
+        keyboardEvent.initEvent('keyup', true, true);
+        keyboardEvent['keyCode'] = 13;
+        keyboardEvent['which'] = 13;
+        inputElement.dispatchEvent(keyboardEvent); 
+        
+        fixture.detectChanges();
+        tick(100);
+
+        expect(match).toBeUndefined();
+      }));
+
+    })
   });
 
   describe('onChange grouped', () => {
@@ -187,4 +388,106 @@ describe('Directive: Typeahead', () => {
     });
   });
 
+  describe('onKeydown', () => {
+    beforeEach(fakeAsync(() => {
+      inputElement.value = 'Alab';
+      fireEvent(inputElement, 'keyup');
+ 
+      fixture.detectChanges();
+      tick(100);
+    }));
+
+    it('should do nothing if there is no container', fakeAsync(() =>{
+      directive.hide();
+      fireEvent(inputElement, 'keydown');
+
+      fixture.detectChanges();
+      tick(100);
+
+      let typeaheadContainer = fixture.debugElement.query(By.css('typeahead-container'));
+      expect(typeaheadContainer).toBeNull();
+    }));
+
+    it('should do nothing if there is an active item', fakeAsync(() =>{
+      fireEvent(inputElement, 'keydown');
+
+      fixture.detectChanges();
+      tick(100);
+
+      var keyboardEvent = document.createEvent("Events");
+      keyboardEvent.initEvent('keydown', true, true);
+      keyboardEvent['keyCode'] = 13;
+      keyboardEvent['which'] = 13;
+      inputElement.dispatchEvent(keyboardEvent); 
+
+      let typeaheadContainer = fixture.debugElement.query(By.css('typeahead-container'));
+      expect(typeaheadContainer).not.toBeNull();
+    }));
+
+    it('should ignore defaults of keys defined for specific roles', fakeAsync(() => {
+      directive.typeaheadEscapeKeys = [13];
+
+      let match :TypeaheadMatch;
+      let sub = directive.typeaheadOnSelect.subscribe(m => {
+        match = m;
+        sub.unsubscribe();
+      });
+
+      var keyboardEvent = document.createEvent("Events");
+      keyboardEvent.initEvent('keydown', true, true);
+      keyboardEvent['keyCode'] = 13;
+      keyboardEvent['which'] = 13;
+      inputElement.dispatchEvent(keyboardEvent); 
+      
+      fixture.detectChanges();
+      tick(100);
+
+      expect(match).toBeUndefined();
+      let typeaheadContainer = fixture.debugElement.query(By.css('typeahead-container'));
+      expect(typeaheadContainer).not.toBeNull();
+    }));
+
+    it('should close container on enter if there is no current active', fakeAsync(() => {
+      directive._container.selectActive(null);
+      var keyboardEvent = document.createEvent("Events");
+      keyboardEvent.initEvent('keydown', true, true);
+      keyboardEvent['keyCode'] = 13;
+      keyboardEvent['which'] = 13;
+      inputElement.dispatchEvent(keyboardEvent); 
+      
+      fixture.detectChanges();
+      tick(100);
+      let typeaheadContainer = fixture.debugElement.query(By.css('typeahead-container'))
+
+      expect(typeaheadContainer).toBeNull();
+    }));
+
+    it('should ignore default for tab', fakeAsync(() => {
+      var keyboardEvent = document.createEvent("Events");
+      keyboardEvent.initEvent('keydown', true, true);
+      keyboardEvent['keyCode'] = 9;
+      keyboardEvent['which'] = 9;
+      inputElement.dispatchEvent(keyboardEvent); 
+      
+      fixture.detectChanges();
+      tick(100);
+      expect(directive._container.active).toBeTruthy();
+    }));
+  });
+
+  describe('onFocus', () =>{
+    it('blur event should send the correct active item', fakeAsync(() => {
+      directive.typeaheadMinLength = 0;
+      let loading = false;
+      let sub = directive.typeaheadLoading.subscribe(b => {
+        loading = b;
+        sub.unsubscribe();
+      });
+      directive.onFocus();
+      fixture.detectChanges();
+      tick(100);
+
+      expect(loading).toBeTruthy();
+    }));
+  });
 });
