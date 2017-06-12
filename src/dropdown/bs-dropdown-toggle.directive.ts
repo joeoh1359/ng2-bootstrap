@@ -31,7 +31,7 @@ export class BsDropdownToggleDirective implements OnDestroy {
   onDocumentClick(event: any): void {
     if (this._state.autoClose && event.button !== 2 &&
       !this._element.nativeElement.contains(event.target)
-	  && event.target.tagName !== "input") {
+	  && event.target.tagName !== "INPUT") {
       this._state.toggleClick.emit(false);
     }
   }
