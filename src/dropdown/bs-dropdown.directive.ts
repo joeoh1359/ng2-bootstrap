@@ -127,6 +127,8 @@ export class BsDropdownDirective implements OnInit, OnDestroy {
 
     // set initial dropdown state from config
     this._state.autoClose = this._config.autoClose;
+	
+	this._subscriptions.push(this._state.toggleDirection.subscribe((dropup: boolean) => this.dropup = dropup));
   }
 
   ngOnInit(): void {
