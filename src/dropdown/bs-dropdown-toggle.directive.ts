@@ -1,5 +1,5 @@
 import {
-  Directive, ElementRef, HostBinding, HostListener, OnDestroy
+  Directive, ElementRef, HostBinding, HostListener, OnDestroy, Input
 } from '@angular/core';
 import { Subscription } from 'rxjs/Subscription';
 
@@ -13,6 +13,10 @@ import { BsDropdownState } from './bs-dropdown.state';
   }
 })
 export class BsDropdownToggleDirective implements OnDestroy {
+	
+  @Input('dropdownToggleIgnore')
+  ignoredElements: string | string[];  
+	
   @HostBinding('attr.disabled')
   isDisabled: boolean = null;
 
@@ -30,7 +34,8 @@ export class BsDropdownToggleDirective implements OnDestroy {
   @HostListener('document:click', ['$event'])
   onDocumentClick(event: any): void {
     if (this._state.autoClose && event.button !== 2 &&
-      !this._element.nativeElement.contains(event.target)) {
+      !this._element.nativeElement.contains(event.target) &&
+	  !this.targetIsIgnoredElement(event.target)) {
       this._state.toggleClick.emit(false);
     }
   }
@@ -53,6 +58,21 @@ export class BsDropdownToggleDirective implements OnDestroy {
     this._subscriptions.push(this._state
       .isDisabledChange
       .subscribe((value: boolean) => this.isDisabled = value || null));
+  }
+  
+  private targetIsIgnoredElement(target: any): boolean {
+	  if (this.ignoredElements == null) {
+		  return false;
+	  }
+	  if (!Array.isArray(this.ignoredElements)) {
+		  this.ignoredElements = [this.ignoredElements];
+	  }
+	  for(let i = 0; i < this.ignoredElements.length; i++) {
+		  if (target.id === this.ignoredElements[i]) {
+			  return true;
+		  }
+	  }
+	  return false;
   }
 
   ngOnDestroy(): void {
