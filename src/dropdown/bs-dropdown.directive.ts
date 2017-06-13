@@ -130,7 +130,7 @@ export class BsDropdownDirective implements OnInit, OnDestroy {
 	
 	this._subscriptions.push(this._state.toggleDirection.subscribe((dropup: boolean) => {
 		this.dropup = dropup;
-        this._state.direction = _dropup ? 'up' : 'down';
+        this._state.direction = dropup ? 'up' : 'down';
 		this._dropdown.position({
 			attachment: dropup ? 'top left' : 'bottom left'
 		});
