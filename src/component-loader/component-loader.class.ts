@@ -112,8 +112,6 @@ export class ComponentLoader<T> {
   }
 
   public show(opts: {content?: string | TemplateRef<any>, [key:string]: any} = {}): ComponentRef<T> {
-    this._subscribePositioning();
-
     if (!this._componentRef) {
       this.onBeforeShow.emit();
       this._contentRef = this._getContentRef(opts.content);
@@ -121,12 +119,14 @@ export class ComponentLoader<T> {
       this._componentRef = this._viewContainerRef
         .createComponent(this._componentFactory, 0, injector, this._contentRef.nodes);
       this.instance = this._componentRef.instance;
+	  this._subscribePositioning();
 
       Object.assign(this._componentRef.instance, opts);
 
       if (this.container === 'body' && typeof document !== 'undefined') {
         document.querySelector(this.container as string)
           .appendChild(this._componentRef.location.nativeElement);
+		this._componentRef.location.nativeElement.style.left = "-100%";
       }
 
       // we need to manually invoke change detection since events registered
@@ -135,7 +135,9 @@ export class ComponentLoader<T> {
       // OnPush strategy
       this._componentRef.changeDetectorRef.markForCheck();
       this.onShown.emit(this._componentRef.instance);
-    }
+    } else {
+	  this._subscribePositioning();
+	}
     return this._componentRef;
   }
 
@@ -152,6 +154,8 @@ export class ComponentLoader<T> {
 
       this._componentRef = null;
       this.onHidden.emit();
+	  
+      this._unsubscribePositioning();
     }
     return this;
   }
@@ -169,8 +173,6 @@ export class ComponentLoader<T> {
     if (this.isShown) {
       this.hide();
     }
-
-    this._unsubscribePositioning();
 
     if (this._unregisterListenersFn) {
       this._unregisterListenersFn();
@@ -203,25 +205,35 @@ export class ComponentLoader<T> {
       return;
     }
 
-    this._zoneSubscription = this._ngZone
-      .onStable.subscribe(() => {
+	//TODO come back to this and make it better.
+    this._posService.position({
+      element: this._componentRef.location,
+      target: this._elementRef,
+      attachment: this.attachment,
+      appendToBody: this.container === 'body'
+    });
+	
+    this._zoneSubscription = setInterval(() => {
         if (!this._componentRef) {
           return;
         }
+		if (this._componentRef.location.nativeElement.style.left == "100%") {
+			this._componentRef.location.nativeElement.style.left = "";
+		}
         this._posService.position({
           element: this._componentRef.location,
           target: this._elementRef,
           attachment: this.attachment,
           appendToBody: this.container === 'body'
         });
-      });
+      }, 16);
   }
 
   private _unsubscribePositioning(): void {
     if (!this._zoneSubscription) {
       return;
     }
-    this._zoneSubscription.unsubscribe();
+    clearInterval(this._zoneSubscription);
     this._zoneSubscription = null;
   }
 
