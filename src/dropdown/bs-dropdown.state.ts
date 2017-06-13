@@ -8,6 +8,7 @@ export class BsDropdownState {
   isOpenChange = new EventEmitter<boolean>();
   isDisabledChange = new EventEmitter<boolean>();
   toggleClick = new EventEmitter<boolean>();
+  toggleDirection = new EventEmitter<boolean>();
 
   /**
    * Content to be displayed as popover.

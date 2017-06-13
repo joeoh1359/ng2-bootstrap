@@ -3,7 +3,6 @@ import { BsDropdownState } from './bs-dropdown.state';
 
 @Component({
   selector: 'bs-dropdown-container',
-  changeDetection: ChangeDetectionStrategy.OnPush,
   host: {
     style: 'display:block;position: absolute;'
   },
